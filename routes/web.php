@@ -3,9 +3,6 @@
 use App\Http\Controllers\Auth\LoginController;
 use Illuminate\Support\Facades\Route;
 
-// Public
-Route::view('/', 'welcome')->name('home');
-
 // Guest only
 Route::middleware('guest')->group(function () {
     Route::get('login', [LoginController::class, 'create'])->name('login');
@@ -16,7 +13,7 @@ Route::middleware('guest')->group(function () {
 Route::middleware('auth')->group(function () {
     Route::post('logout', [LoginController::class, 'destroy'])->name('logout');
 
-    Route::view('dashboard', 'dashboard')->name('dashboard');
+    Route::view('/', 'dashboard')->name('dashboard');
 
     Route::redirect('settings', 'settings/profile');
     Route::livewire('settings/profile', 'pages::settings.profile')->name('profile.edit');
