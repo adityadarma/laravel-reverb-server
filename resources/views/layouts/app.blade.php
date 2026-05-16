@@ -11,9 +11,12 @@
             </flux:sidebar.header>
 
             <flux:sidebar.nav>
-                <flux:sidebar.group :heading="__('Platform')" class="grid">
+                <flux:sidebar.group heading="Platform" class="grid">
                     <flux:sidebar.item icon="home" :href="route('dashboard')" :current="request()->routeIs('dashboard')" wire:navigate>
-                        {{ __('Dashboard') }}
+                        Dashboard
+                    </flux:sidebar.item>
+                    <flux:sidebar.item icon="squares-2x2" :href="route('apps.index')" :current="request()->routeIs('apps.*')" wire:navigate>
+                        Apps
                     </flux:sidebar.item>
                 </flux:sidebar.group>
             </flux:sidebar.nav>
@@ -55,7 +58,7 @@
 
                     <flux:menu.radio.group>
                         <flux:menu.item :href="route('profile.edit')" icon="cog" wire:navigate>
-                            {{ __('Settings') }}
+                            Settings
                         </flux:menu.item>
                     </flux:menu.radio.group>
 
@@ -69,7 +72,7 @@
                             icon="arrow-right-start-on-rectangle"
                             class="w-full cursor-pointer"
                         >
-                            {{ __('Log out') }}
+                            Log out
                         </flux:menu.item>
                     </form>
                 </flux:menu>

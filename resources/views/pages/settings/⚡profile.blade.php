@@ -33,21 +33,21 @@ new #[Title('Profile settings')] class extends Component {
 
         $user->fill($validated)->save();
 
-        Flux::toast(variant: 'success', text: __('Profile updated.'));
+        Flux::toast(variant: 'success', text: 'Profile updated.');
     }
 }; ?>
 
 <section class="w-full">
     @include('partials.settings-heading')
 
-    <x-pages::settings.layout :heading="__('Profile')" :subheading="__('Update your name and email address')">
+    <x-pages::settings.layout heading="Profile" subheading="Update your name and email address">
         <form wire:submit="updateProfileInformation" class="my-6 w-full space-y-6">
-            <flux:input wire:model="name" :label="__('Name')" type="text" required autofocus autocomplete="name" />
-            <flux:input wire:model="email" :label="__('Email')" type="email" required autocomplete="email" />
+            <flux:input wire:model="name" label="Name" type="text" required autofocus autocomplete="name" />
+            <flux:input wire:model="email" label="Email" type="email" required autocomplete="email" />
 
             <div class="flex items-center gap-4">
                 <flux:button variant="primary" type="submit" data-test="update-profile-button">
-                    {{ __('Save') }}
+                    Save
                 </flux:button>
             </div>
         </form>

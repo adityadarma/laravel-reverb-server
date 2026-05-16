@@ -1,19 +1,19 @@
 <?php
 
-use App\Http\Controllers\Auth\LoginController;
+use App\Http\Controllers\Auth\LogoutController;
 use Illuminate\Support\Facades\Route;
 
 // Guest only
 Route::middleware('guest')->group(function () {
-    Route::get('login', [LoginController::class, 'create'])->name('login');
-    Route::post('login', [LoginController::class, 'store'])->name('login.store');
+    Route::livewire('login', 'pages::auth.login')->name('login');
 });
 
 // Authenticated
 Route::middleware('auth')->group(function () {
-    Route::post('logout', [LoginController::class, 'destroy'])->name('logout');
+    Route::post('logout', LogoutController::class)->name('logout');
+    Route::livewire('/', 'pages::dashboard')->name('dashboard');
 
-    Route::view('/', 'dashboard')->name('dashboard');
+    Route::livewire('apps', 'pages::apps.index')->name('apps.index');
 
     Route::redirect('settings', 'settings/profile');
     Route::livewire('settings/profile', 'pages::settings.profile')->name('profile.edit');

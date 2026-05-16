@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Table;
 use Illuminate\Database\Eloquent\Casts\Attribute;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -12,7 +13,6 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 #[Table('apps')]
 #[Fillable([
     'name',
-    'app_id',
     'key',
     'secret',
     'host',
@@ -32,7 +32,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 ])]
 class App extends Model
 {
-    use HasFactory, SoftDeletes;
+    use HasFactory, HasUuids, SoftDeletes;
 
     protected function casts(): array
     {
@@ -90,7 +90,7 @@ class App extends Model
             get: fn () => [
                 'key'                       => $this->key,
                 'secret'                    => $this->secret,
-                'app_id'                    => $this->app_id,
+                'app_id'                    => $this->id,
                 'options'                   => $this->connection_options,
                 'allowed_origins'           => $this->allowed_origins ?? ['*'],
                 'ping_interval'             => $this->ping_interval,
