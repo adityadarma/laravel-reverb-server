@@ -27,7 +27,7 @@ new #[Title('Apps')] class extends Component {
     public int $perPage = 10;
 
     // ── Form modal ────────────────────────────────────────────────────────────
-    public ?int   $editingId                    = null;
+    public ?string $editingId                    = null;
     public string $name                         = '';
     public string $host                         = '';
     public int    $port                         = 443;
@@ -45,7 +45,7 @@ new #[Title('Apps')] class extends Component {
     public bool   $is_active                    = true;
 
     // ── Delete modal ──────────────────────────────────────────────────────────
-    public ?int    $deletingId   = null;
+    public ?string $deletingId   = null;
     public ?string $deletingName = null;
 
     // ── Sortable columns whitelist ────────────────────────────────────────────
@@ -95,7 +95,7 @@ new #[Title('Apps')] class extends Component {
         Flux::modal('app-form-modal')->show();
     }
 
-    public function openEdit(int $id): void
+    public function openEdit(string $id): void
     {
         $app = App::findOrFail($id);
 
@@ -177,7 +177,7 @@ new #[Title('Apps')] class extends Component {
     }
 
     // ── Delete modal actions ──────────────────────────────────────────────────
-    public function openDelete(int $id): void
+    public function openDelete(string $id): void
     {
         $app = App::findOrFail($id);
 
@@ -334,17 +334,22 @@ new #[Title('Apps')] class extends Component {
                             </flux:badge>
                         </td>
                         <td class="px-4 py-3">
-                            <div class="flex items-center justify-end gap-2">
-                                <flux:modal.trigger name="app-form-modal">
-                                    <flux:button size="sm" variant="filled" icon="pencil" wire:click="openEdit({{ $app->id }})">
-                                        Edit
-                                    </flux:button>
-                                </flux:modal.trigger>
-                                <flux:modal.trigger name="app-delete-modal">
-                                    <flux:button size="sm" variant="danger" icon="trash" wire:click="openDelete({{ $app->id }})">
-                                        Delete
-                                    </flux:button>
-                                </flux:modal.trigger>
+                            <div class="flex items-center justify-end">
+                                <flux:dropdown position="bottom" align="end">
+                                    <flux:button size="sm" variant="ghost" icon="ellipsis-vertical" />
+                                    <flux:menu>
+                                        <flux:menu.item icon="eye" :href="route('apps.show', $app->id)" wire:navigate>
+                                            Detail
+                                        </flux:menu.item>
+                                        <flux:menu.item icon="pencil" wire:click="openEdit('{{ $app->id }}')">
+                                            Edit
+                                        </flux:menu.item>
+                                        <flux:menu.separator />
+                                        <flux:menu.item icon="trash" variant="danger" wire:click="openDelete('{{ $app->id }}')">
+                                            Delete
+                                        </flux:menu.item>
+                                    </flux:menu>
+                                </flux:dropdown>
                             </div>
                         </td>
                     </tr>

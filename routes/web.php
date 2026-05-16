@@ -14,6 +14,7 @@ Route::middleware('auth')->group(function () {
     Route::livewire('/', 'pages::dashboard')->name('dashboard');
 
     Route::livewire('apps', 'pages::apps.index')->name('apps.index');
+    Route::livewire('apps/{id}', 'pages::apps.show')->name('apps.show');
 
     Route::redirect('settings', 'settings/profile');
     Route::livewire('settings/profile', 'pages::settings.profile')->name('profile.edit');
