@@ -26,9 +26,7 @@ class ReverbAppServiceProvider extends ServiceProvider
             return;
         }
 
-        $apps = Cache::remember('reverb_apps', 60, fn () =>
-            App::active()->get()->map->reverb_config->values()->all()
-        );
+        $apps = Cache::remember('reverb_apps', 60, fn () => App::active()->get()->map->reverb_config->values()->all());
 
         config(['reverb.apps.apps' => $apps]);
     }

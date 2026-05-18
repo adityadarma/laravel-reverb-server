@@ -1,8 +1,9 @@
 <?php
 
 use App\Providers\AppServiceProvider;
+use App\Providers\ReverbAppServiceProvider;
 
 return [
     AppServiceProvider::class,
-    App\Providers\ReverbAppServiceProvider::class,
+    ReverbAppServiceProvider::class,
 ];
