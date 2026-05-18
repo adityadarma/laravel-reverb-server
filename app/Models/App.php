@@ -37,17 +37,17 @@ class App extends Model
     protected function casts(): array
     {
         return [
-            'allowed_origins'               => 'array',
-            'port'                          => 'integer',
-            'ping_interval'                 => 'integer',
-            'activity_timeout'              => 'integer',
-            'max_connections'               => 'integer',
-            'max_message_size'              => 'integer',
-            'rate_limiting_enabled'         => 'boolean',
-            'rate_limit_max_attempts'       => 'integer',
-            'rate_limit_decay_seconds'      => 'integer',
+            'allowed_origins' => 'array',
+            'port' => 'integer',
+            'ping_interval' => 'integer',
+            'activity_timeout' => 'integer',
+            'max_connections' => 'integer',
+            'max_message_size' => 'integer',
+            'rate_limiting_enabled' => 'boolean',
+            'rate_limit_max_attempts' => 'integer',
+            'rate_limit_decay_seconds' => 'integer',
             'rate_limit_terminate_on_limit' => 'boolean',
-            'is_active'                     => 'boolean',
+            'is_active' => 'boolean',
         ];
     }
 
@@ -64,8 +64,8 @@ class App extends Model
     {
         return Attribute::make(
             get: fn () => [
-                'host'   => $this->host,
-                'port'   => $this->port,
+                'host' => $this->host,
+                'port' => $this->port,
                 'scheme' => $this->scheme,
                 'useTLS' => $this->scheme === 'https',
             ],
@@ -76,9 +76,9 @@ class App extends Model
     {
         return Attribute::make(
             get: fn () => [
-                'enabled'            => $this->rate_limiting_enabled,
-                'max_attempts'       => $this->rate_limit_max_attempts,
-                'decay_seconds'      => $this->rate_limit_decay_seconds,
+                'enabled' => $this->rate_limiting_enabled,
+                'max_attempts' => $this->rate_limit_max_attempts,
+                'decay_seconds' => $this->rate_limit_decay_seconds,
                 'terminate_on_limit' => $this->rate_limit_terminate_on_limit,
             ],
         );
@@ -88,17 +88,17 @@ class App extends Model
     {
         return Attribute::make(
             get: fn () => [
-                'key'                       => $this->key,
-                'secret'                    => $this->secret,
-                'app_id'                    => $this->id,
-                'options'                   => $this->connection_options,
-                'allowed_origins'           => $this->allowed_origins ?? ['*'],
-                'ping_interval'             => $this->ping_interval,
-                'activity_timeout'          => $this->activity_timeout,
-                'max_connections'           => $this->max_connections,
-                'max_message_size'          => $this->max_message_size,
+                'key' => $this->key,
+                'secret' => $this->secret,
+                'app_id' => $this->id,
+                'options' => $this->connection_options,
+                'allowed_origins' => $this->allowed_origins ?? ['*'],
+                'ping_interval' => $this->ping_interval,
+                'activity_timeout' => $this->activity_timeout,
+                'max_connections' => $this->max_connections,
+                'max_message_size' => $this->max_message_size,
                 'accept_client_events_from' => $this->accept_client_events_from,
-                'rate_limiting'             => $this->rate_limiting_config,
+                'rate_limiting' => $this->rate_limiting_config,
             ],
         );
     }

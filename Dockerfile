@@ -20,7 +20,8 @@ COPY composer.json composer.lock ./
 RUN composer install --no-dev --no-scripts --no-autoloader --prefer-dist
 
 COPY . .
-RUN composer dump-autoload --optimize --no-dev
+RUN mkdir -p database && touch database/database.sqlite \
+    && composer dump-autoload --optimize --no-dev --no-scripts
 
 # ─── Production image ─────────────────────────────────────────────────────────
 FROM php:8.4-fpm-alpine AS production

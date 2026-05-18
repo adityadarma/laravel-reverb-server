@@ -2,10 +2,9 @@
 
 namespace App\Providers;
 
-use App\Models\App;
-use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\Schema;
+use App\Reverb\DatabaseApplicationProvider;
 use Illuminate\Support\ServiceProvider;
+use Laravel\Reverb\ApplicationManager;
 
 class ReverbAppServiceProvider extends ServiceProvider
 {
@@ -22,14 +21,10 @@ class ReverbAppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        if (! Schema::hasTable('apps')) {
-            return;
-        }
+        $this->app->resolving(ApplicationManager::class, function (ApplicationManager $manager) {
+            $manager->extend('database', fn () => new DatabaseApplicationProvider);
+        });
 
-        $apps = Cache::remember('reverb_apps', 60, fn () =>
-            App::active()->get()->map->reverb_config->values()->all()
-        );
-
-        config(['reverb.apps.apps' => $apps]);
+        config(['reverb.apps.provider' => 'database']);
     }
 }

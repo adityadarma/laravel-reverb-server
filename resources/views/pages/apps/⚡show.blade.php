@@ -18,7 +18,7 @@ new #[Title('App Detail')] class extends Component {
         $this->app = App::findOrFail($id);
     }
 
-    public function sendEvent(string $channel, string $event, string $data): void
+    public function dispatchEvent(string $channel, string $event, string $data): void
     {
         if (empty($channel) || empty($event)) {
             $this->addError('sendData', 'Channel and event name are required.');
@@ -189,7 +189,7 @@ new #[Title('App Detail')] class extends Component {
             <div class="flex items-end">
                 <x-ui.button
                     class="w-full"
-                    @click="$wire.sendEvent(sendChannel, sendEventName, sendData)"
+                    @click="$wire.dispatchEvent(sendChannel, sendEventName, sendData)"
                 >
                     Send
                 </x-ui.button>

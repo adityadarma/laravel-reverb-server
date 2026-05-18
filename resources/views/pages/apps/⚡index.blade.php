@@ -241,9 +241,9 @@ new #[Title('Apps')] class extends Component {
         {{-- Table --}}
         <div class="overflow-x-auto">
             <table class="w-full text-sm">
-                <thead class="border-b border-border bg-muted/50">
-                    <tr>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wide w-12">No</th>
+                <thead class="border-b border-border">
+                    <tr class="text-xs text-muted-foreground">
+                        <th class="px-4 py-2.5 text-left font-medium w-10">No</th>
                         @php
                             $cols = [
                                 'name'      => ['label' => 'Name',    'sortable' => true],
@@ -254,114 +254,88 @@ new #[Title('Apps')] class extends Component {
                             ];
                         @endphp
                         @foreach ($cols as $col => $def)
-                            <th class="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                            <th class="px-4 py-2.5 text-left font-medium">
                                 @if ($def['sortable'])
-                                    <button
-                                        wire:click="sort('{{ $col }}')"
-                                        class="flex items-center gap-1 font-medium hover:text-foreground transition-colors"
-                                    >
+                                    <button wire:click="sort('{{ $col }}')" class="flex items-center gap-1 hover:text-foreground transition-colors">
                                         {{ $def['label'] }}
                                         @if ($sortColumn === $col)
-                                            <svg xmlns="http://www.w3.org/2000/svg" class="size-3 {{ $sortDirection === 'desc' ? 'rotate-180' : '' }}" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                                <path stroke-linecap="round" stroke-linejoin="round" d="M5 15l7-7 7 7" />
-                                            </svg>
+                                            <svg class="size-3 {{ $sortDirection === 'desc' ? 'rotate-180' : '' }}" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 15l7-7 7 7"/></svg>
                                         @else
-                                            <svg xmlns="http://www.w3.org/2000/svg" class="size-3 opacity-40" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                                <path stroke-linecap="round" stroke-linejoin="round" d="M8 9l4-4 4 4M8 15l4 4 4-4" />
-                                            </svg>
+                                            <svg class="size-3 opacity-30" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 9l4-4 4 4M8 15l4 4 4-4"/></svg>
                                         @endif
                                     </button>
                                 @else
-                                    <span class="font-medium">{{ $def['label'] }}</span>
+                                    {{ $def['label'] }}
                                 @endif
                             </th>
                         @endforeach
-                        <th class="px-4 py-3 text-right text-xs font-medium text-muted-foreground uppercase tracking-wide">Actions</th>
+                        <th class="px-4 py-2.5 w-24"></th>
                     </tr>
                 </thead>
-                <tbody class="divide-y divide-border">
+                <tbody>
                     @forelse ($this->apps as $app)
-                        <tr class="hover:bg-muted/50 transition-colors relative">
-                            <td class="px-4 py-3 text-sm text-muted-foreground tabular-nums">
+                        <tr class="border-b border-border/50 hover:bg-muted/30 transition-colors relative group">
+                            <td class="px-4 py-2.5 text-xs text-muted-foreground tabular-nums">
                                 {{ $this->apps->firstItem() + $loop->index }}
                             </td>
-                            <td class="px-4 py-3 text-sm font-medium text-foreground">{{ $app->name }}</td>
-                            <td class="px-4 py-3">
-                                <div class="flex items-center gap-1.5 font-mono text-xs text-muted-foreground"
-                                    x-data="{ copied: false }"
-                                >
-                                    <span class="truncate max-w-[120px]" title="{{ $app->id }}">{{ $app->id }}</span>
-                                    <button
-                                        @click="navigator.clipboard.writeText('{{ $app->id }}'); copied = true; setTimeout(() => copied = false, 1500)"
-                                        class="shrink-0 text-muted-foreground hover:text-foreground transition-colors"
-                                        title="Copy"
-                                    >
-                                        <svg x-show="!copied" xmlns="http://www.w3.org/2000/svg" class="size-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                            <path stroke-linecap="round" stroke-linejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                                        </svg>
-                                        <svg x-show="copied" xmlns="http://www.w3.org/2000/svg" class="size-3.5 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                            <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
-                                        </svg>
+                            <td class="px-4 py-2.5 font-medium text-foreground">{{ $app->name }}</td>
+
+                            {{-- App ID --}}
+                            <td class="px-4 py-2.5">
+                                <div class="flex items-center gap-1.5 font-mono text-xs text-muted-foreground" x-data="{ copied: false }">
+                                    <span class="truncate max-w-[110px]" title="{{ $app->id }}">{{ $app->id }}</span>
+                                    <button @click="navigator.clipboard.writeText('{{ $app->id }}'); copied = true; setTimeout(() => copied = false, 1500)" class="opacity-0 group-hover:opacity-100 shrink-0 hover:text-foreground transition-all" title="Copy">
+                                        <svg x-show="!copied" class="size-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+                                        <svg x-show="copied" class="size-3 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
                                     </button>
                                 </div>
                             </td>
-                            <td class="px-4 py-3">
-                                <div class="flex items-center gap-1.5 font-mono text-xs text-muted-foreground"
-                                    x-data="{ copied: false }"
-                                >
-                                    <span class="truncate max-w-[120px]" title="{{ $app->key }}">{{ $app->key }}</span>
-                                    <button
-                                        @click="navigator.clipboard.writeText('{{ $app->key }}'); copied = true; setTimeout(() => copied = false, 1500)"
-                                        class="shrink-0 text-muted-foreground hover:text-foreground transition-colors"
-                                        title="Copy"
-                                    >
-                                        <svg x-show="!copied" xmlns="http://www.w3.org/2000/svg" class="size-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                            <path stroke-linecap="round" stroke-linejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                                        </svg>
-                                        <svg x-show="copied" xmlns="http://www.w3.org/2000/svg" class="size-3.5 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                            <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
-                                        </svg>
+
+                            {{-- Key --}}
+                            <td class="px-4 py-2.5">
+                                <div class="flex items-center gap-1.5 font-mono text-xs text-muted-foreground" x-data="{ copied: false }">
+                                    <span class="truncate max-w-[110px]" title="{{ $app->key }}">{{ $app->key }}</span>
+                                    <button @click="navigator.clipboard.writeText('{{ $app->key }}'); copied = true; setTimeout(() => copied = false, 1500)" class="opacity-0 group-hover:opacity-100 shrink-0 hover:text-foreground transition-all" title="Copy">
+                                        <svg x-show="!copied" class="size-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+                                        <svg x-show="copied" class="size-3 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
                                     </button>
                                 </div>
                             </td>
-                            <td class="px-4 py-3">
-                                <div class="flex items-center gap-1.5 font-mono text-xs text-muted-foreground"
-                                    x-data="{ copied: false }"
-                                >
-                                    <span class="truncate max-w-[120px]" title="{{ $app->secret }}">{{ $app->secret }}</span>
-                                    <button
-                                        @click="navigator.clipboard.writeText('{{ $app->secret }}'); copied = true; setTimeout(() => copied = false, 1500)"
-                                        class="shrink-0 text-muted-foreground hover:text-foreground transition-colors"
-                                        title="Copy"
-                                    >
-                                        <svg x-show="!copied" xmlns="http://www.w3.org/2000/svg" class="size-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                            <path stroke-linecap="round" stroke-linejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                                        </svg>
-                                        <svg x-show="copied" xmlns="http://www.w3.org/2000/svg" class="size-3.5 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                            <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
-                                        </svg>
+
+                            {{-- Secret --}}
+                            <td class="px-4 py-2.5">
+                                <div class="flex items-center gap-1.5 font-mono text-xs text-muted-foreground" x-data="{ copied: false }">
+                                    <span class="truncate max-w-[110px]" title="{{ $app->secret }}">{{ $app->secret }}</span>
+                                    <button @click="navigator.clipboard.writeText('{{ $app->secret }}'); copied = true; setTimeout(() => copied = false, 1500)" class="opacity-0 group-hover:opacity-100 shrink-0 hover:text-foreground transition-all" title="Copy">
+                                        <svg x-show="!copied" class="size-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+                                        <svg x-show="copied" class="size-3 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
                                     </button>
                                 </div>
                             </td>
-                            <td class="px-4 py-3">
-                                <x-ui.badge :variant="$app->is_active ? 'success' : 'danger'">
-                                    {{ $app->is_active ? 'Active' : 'Inactive' }}
-                                </x-ui.badge>
+
+                            {{-- Status --}}
+                            <td class="px-4 py-2.5">
+                                @if ($app->is_active)
+                                    <span class="inline-flex items-center rounded-full bg-emerald-500 px-2 py-0.5 text-xs font-semibold text-white">
+                                        ACTIVE
+                                    </span>
+                                @else
+                                    <span class="inline-flex items-center rounded-full bg-zinc-500 px-2 py-0.5 text-xs font-semibold text-white">
+                                        INACTIVE
+                                    </span>
+                                @endif
                             </td>
-                            <td class="px-4 py-3">
-                                <div class="flex items-center justify-end"
-                                    x-data="{ open: false }"
-                                    @click.outside="open = false"
-                                >
+
+                            {{-- Actions --}}
+                            <td class="px-4 py-2.5">
+                                <div class="flex items-center justify-end" x-data="{ open: false }" @click.outside="open = false">
                                     <button
                                         @click.stop="open = !open"
-                                        class="inline-flex items-center justify-center rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+                                        class="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
                                     >
-                                        <svg class="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 5v.01M12 12v.01M12 19v.01"/>
-                                        </svg>
+                                        Actions
+                                        <svg class="size-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
                                     </button>
-
                                     <div
                                         x-show="open"
                                         x-transition:enter="transition ease-out duration-100"
@@ -374,19 +348,16 @@ new #[Title('Apps')] class extends Component {
                                         class="absolute right-4 z-50 min-w-[8rem] rounded-md border border-border bg-card p-1 shadow-md"
                                         style="display: none"
                                     >
-                                        <a href="{{ route('apps.show', $app->id) }}" wire:navigate
-                                            class="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-sm text-foreground hover:bg-accent transition-colors cursor-pointer">
+                                        <a href="{{ route('apps.show', $app->id) }}" wire:navigate class="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-sm text-foreground hover:bg-accent transition-colors cursor-pointer">
                                             <svg class="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
                                             Detail
                                         </a>
-                                        <button wire:click="openEdit('{{ $app->id }}')"
-                                            class="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-sm text-foreground hover:bg-accent transition-colors cursor-pointer">
+                                        <button wire:click="openEdit('{{ $app->id }}')" class="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-sm text-foreground hover:bg-accent transition-colors cursor-pointer">
                                             <svg class="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
                                             Edit
                                         </button>
                                         <div class="h-px bg-border my-1"></div>
-                                        <button wire:click="openDelete('{{ $app->id }}')"
-                                            class="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-sm text-destructive hover:bg-destructive/10 transition-colors cursor-pointer">
+                                        <button wire:click="openDelete('{{ $app->id }}')" class="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-sm text-destructive hover:bg-destructive/10 transition-colors cursor-pointer">
                                             <svg class="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
                                             Delete
                                         </button>
@@ -419,66 +390,80 @@ new #[Title('Apps')] class extends Component {
 
     {{-- Form Modal --}}
     <x-ui.modal name="app-form-modal" maxWidth="2xl">
-        <form wire:submit="save" class="space-y-6">
-            <div>
+        <form wire:submit="save">
+            {{-- Header --}}
+            <div class="mb-5">
                 <h2 class="text-lg font-semibold text-foreground">{{ $editingId ? 'Edit App' : 'New App' }}</h2>
-                <p class="text-sm text-muted-foreground mt-1">{{ $editingId ? 'Update the Reverb application settings.' : 'Create a new Reverb application.' }}</p>
+                <p class="text-sm text-muted-foreground mt-0.5">{{ $editingId ? 'Update the Reverb application settings.' : 'Create a new Reverb application.' }}</p>
             </div>
 
-            {{-- Basic Info --}}
-            <div class="space-y-4">
+            {{-- Scrollable body --}}
+            <div class="max-h-[60vh] overflow-y-auto scrollbar-hide pr-1 space-y-5">
+
+                {{-- Basic --}}
                 <x-ui.input wire:model="name" label="Name" required placeholder="My App" />
-            </div>
 
-            {{-- Connection --}}
-            <div class="space-y-4">
-                <div class="grid grid-cols-3 gap-4">
-                    <div class="col-span-2">
-                        <x-ui.input wire:model="host" label="Host" placeholder="example.com" />
+                {{-- Connection --}}
+                <div class="rounded-md border border-border p-4 space-y-4">
+                    <p class="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Connection</p>
+                    <div class="grid grid-cols-3 gap-3">
+                        <div class="col-span-2">
+                            <x-ui.input wire:model="host" label="Host" placeholder="example.com" />
+                        </div>
+                        <x-ui.input wire:model="port" label="Port" type="number" />
                     </div>
-                    <x-ui.input wire:model="port" label="Port" type="number" />
-                </div>
-                <x-ui.select wire:model="scheme" label="Scheme">
-                    <option value="https">https</option>
-                    <option value="http">http</option>
-                </x-ui.select>
-                <x-ui.input wire:model="allowed_origins" label="Allowed Origins" placeholder="* or https://example.com,https://app.com" description="Comma-separated. Use * for all." />
-            </div>
-
-            {{-- Limits --}}
-            <div class="space-y-4">
-                <div class="grid grid-cols-2 gap-4">
-                    <x-ui.input wire:model="ping_interval" label="Ping Interval (s)" type="number" />
-                    <x-ui.input wire:model="activity_timeout" label="Activity Timeout (s)" type="number" />
-                    <x-ui.input wire:model="max_connections" label="Max Connections" type="number" placeholder="Unlimited" />
-                    <x-ui.input wire:model="max_message_size" label="Max Message Size (bytes)" type="number" />
-                </div>
-                <x-ui.select wire:model="accept_client_events_from" label="Accept Client Events From">
-                    <option value="members">members</option>
-                    <option value="all">all</option>
-                    <option value="none">none</option>
-                </x-ui.select>
-            </div>
-
-            {{-- Rate Limiting --}}
-            <div class="space-y-4">
-                <x-ui.checkbox wire:model.live="rate_limiting_enabled" label="Enable rate limiting" />
-                @if ($rate_limiting_enabled)
-                    <div class="grid grid-cols-2 gap-4">
-                        <x-ui.input wire:model="rate_limit_max_attempts" label="Max Attempts" type="number" />
-                        <x-ui.input wire:model="rate_limit_decay_seconds" label="Decay (s)" type="number" />
+                    <div class="grid grid-cols-2 gap-3">
+                        <x-ui.select wire:model="scheme" label="Scheme">
+                            <option value="https">https</option>
+                            <option value="http">http</option>
+                        </x-ui.select>
+                        <x-ui.input wire:model="allowed_origins" label="Allowed Origins" placeholder="*" description="Comma-separated. Use * for all." />
                     </div>
-                    <x-ui.checkbox wire:model="rate_limit_terminate_on_limit" label="Terminate on limit" />
-                @endif
+                </div>
+
+                {{-- Limits --}}
+                <div class="rounded-md border border-border p-4 space-y-4">
+                    <p class="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Limits</p>
+                    <div class="grid grid-cols-2 gap-3">
+                        <x-ui.input wire:model="ping_interval" label="Ping Interval (s)" type="number" />
+                        <x-ui.input wire:model="activity_timeout" label="Activity Timeout (s)" type="number" />
+                        <x-ui.input wire:model="max_connections" label="Max Connections" type="number" placeholder="Unlimited" />
+                        <x-ui.input wire:model="max_message_size" label="Max Message Size (bytes)" type="number" />
+                    </div>
+                    <x-ui.select wire:model="accept_client_events_from" label="Accept Client Events From">
+                        <option value="members">members</option>
+                        <option value="all">all</option>
+                        <option value="none">none</option>
+                    </x-ui.select>
+                </div>
+
+                {{-- Rate Limiting --}}
+                <div class="rounded-md border border-border p-4 space-y-4">
+                    <p class="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Rate Limiting</p>
+                    <x-ui.checkbox wire:model.live="rate_limiting_enabled" label="Enable rate limiting" />
+                    @if ($rate_limiting_enabled)
+                        <div class="grid grid-cols-2 gap-3">
+                            <x-ui.input wire:model="rate_limit_max_attempts" label="Max Attempts" type="number" />
+                            <x-ui.input wire:model="rate_limit_decay_seconds" label="Decay (s)" type="number" />
+                        </div>
+                        <x-ui.checkbox wire:model="rate_limit_terminate_on_limit" label="Terminate connection on limit" />
+                    @endif
+                </div>
+
+                <x-ui.checkbox wire:model="is_active" label="Active" />
+
             </div>
 
-            <x-ui.checkbox wire:model="is_active" label="Active" />
-
-            <div class="flex justify-end gap-3 pt-2">
+            {{-- Footer --}}
+            <div class="flex justify-end gap-3 pt-5 mt-5 border-t border-border">
                 <x-ui.button type="button" variant="outline" @click="$dispatch('close-modal-app-form-modal')">
                     Cancel
                 </x-ui.button>
-                <x-ui.button type="submit">
+                <x-ui.button type="submit" wire:loading.attr="disabled">
+                    <svg wire:loading class="size-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+                    </svg>
                     {{ $editingId ? 'Update' : 'Create' }}
                 </x-ui.button>
             </div>
