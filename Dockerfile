@@ -27,6 +27,7 @@ RUN mkdir -p database && touch database/database.sqlite \
 FROM php:8.4-fpm-alpine AS production
 
 ARG BUILD_VERSION=dev
+ARG GITHUB_REPOSITORY=""
 ENV APP_VERSION=${BUILD_VERSION}
 
 LABEL org.opencontainers.image.title="Laravel Reverb Server"

@@ -62,6 +62,7 @@ jobs:
           cache-to: type=gha,mode=max
           build-args: |
             BUILD_VERSION=${{ steps.meta.outputs.version }}
+            GITHUB_REPOSITORY=${{ github.repository }}
 
   release:
     name: Create GitHub Release
