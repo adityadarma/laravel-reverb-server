@@ -1,6 +1,5 @@
 <?php
 
-use Flux\Flux;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rule;
 use Livewire\Attributes\Title;
@@ -33,7 +32,7 @@ new #[Title('Profile settings')] class extends Component {
 
         $user->fill($validated)->save();
 
-        Flux::toast(variant: 'success', text: 'Profile updated.');
+        $this->dispatch('toast', message: 'Profile updated.');
     }
 }; ?>
 
@@ -42,13 +41,13 @@ new #[Title('Profile settings')] class extends Component {
 
     <x-pages::settings.layout heading="Profile" subheading="Update your name and email address">
         <form wire:submit="updateProfileInformation" class="my-6 w-full space-y-6">
-            <flux:input wire:model="name" label="Name" type="text" required autofocus autocomplete="name" />
-            <flux:input wire:model="email" label="Email" type="email" required autocomplete="email" />
+            <x-ui.input wire:model="name" label="Name" type="text" required autofocus autocomplete="name" />
+            <x-ui.input wire:model="email" label="Email" type="email" required autocomplete="email" />
 
             <div class="flex items-center gap-4">
-                <flux:button variant="primary" type="submit" data-test="update-profile-button">
+                <x-ui.button type="submit" data-test="update-profile-button">
                     Save
-                </flux:button>
+                </x-ui.button>
             </div>
         </form>
 

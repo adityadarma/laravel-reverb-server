@@ -1,6 +1,5 @@
 <?php
 
-use Flux\Flux;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rules\Password;
 use Illuminate\Validation\ValidationException;
@@ -34,7 +33,7 @@ new #[Title('Security settings')] class extends Component {
 
         $this->reset('current_password', 'password', 'password_confirmation');
 
-        Flux::toast(variant: 'success', text: 'Password updated.');
+        $this->dispatch('toast', message: 'Password updated.');
     }
 }; ?>
 
@@ -43,35 +42,32 @@ new #[Title('Security settings')] class extends Component {
 
     <x-pages::settings.layout heading="Update password" subheading="Ensure your account is using a long, random password to stay secure">
         <form method="POST" wire:submit="updatePassword" class="mt-6 space-y-6">
-            <flux:input
+            <x-ui.input
                 wire:model="current_password"
                 label="Current password"
                 type="password"
                 required
                 autocomplete="current-password"
-                viewable
             />
-            <flux:input
+            <x-ui.input
                 wire:model="password"
                 label="New password"
                 type="password"
                 required
                 autocomplete="new-password"
-                viewable
             />
-            <flux:input
+            <x-ui.input
                 wire:model="password_confirmation"
                 label="Confirm password"
                 type="password"
                 required
                 autocomplete="new-password"
-                viewable
             />
 
             <div class="flex items-center gap-4">
-                <flux:button variant="primary" type="submit">
+                <x-ui.button type="submit">
                     Save
-                </flux:button>
+                </x-ui.button>
             </div>
         </form>
     </x-pages::settings.layout>

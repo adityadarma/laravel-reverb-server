@@ -1,15 +1,84 @@
 <?php
 
 use App\Models\App;
+use Illuminate\Support\Facades\Http;
 use Livewire\Attributes\Title;
 use Livewire\Component;
 
 new #[Title('App Detail')] class extends Component {
     public App $app;
 
+    // Send event form
+    public string $sendChannel = '';
+    public string $sendEvent   = '';
+    public string $sendData    = '{}';
+
     public function mount(string $id): void
     {
         $this->app = App::findOrFail($id);
+    }
+
+    public function sendEvent(string $channel, string $event, string $data): void
+    {
+        if (empty($channel) || empty($event)) {
+            $this->addError('sendData', 'Channel and event name are required.');
+            return;
+        }
+
+        // Validate JSON
+        $decoded = json_decode($data, true);
+        if (json_last_error() !== JSON_ERROR_NONE) {
+            $this->addError('sendData', 'Invalid JSON: ' . json_last_error_msg());
+            return;
+        }
+
+        $host = config('reverb.servers.reverb.host', '0.0.0.0');
+        $port = config('reverb.servers.reverb.port', 8080);
+        $path = config('reverb.servers.reverb.path', '');
+
+        if ($host === '0.0.0.0') {
+            $host = '127.0.0.1';
+        }
+
+        $scheme   = app()->isProduction() ? 'https' : 'http';
+        $endpoint = "/apps/{$this->app->id}/events";
+
+        $body = json_encode([
+            'name'     => $event,
+            'channels' => [$channel],
+            'data'     => json_encode($decoded),
+        ]);
+
+        $timestamp = (string) time();
+        $bodyMd5   = md5($body);
+
+        $params = [
+            'auth_key'       => $this->app->key,
+            'auth_timestamp' => $timestamp,
+            'auth_version'   => '1.0',
+            'body_md5'       => $bodyMd5,
+        ];
+        ksort($params);
+
+        $queryString = http_build_query($params);
+        $toSign      = "POST\n{$endpoint}\n{$queryString}";
+        $signature   = hash_hmac('sha256', $toSign, $this->app->secret);
+
+        $url = "{$scheme}://{$host}:{$port}{$path}{$endpoint}?{$queryString}&auth_signature={$signature}";
+
+        try {
+            $response = Http::timeout(3)
+                ->withBody($body, 'application/json')
+                ->post($url);
+
+            if ($response->successful()) {
+                $this->dispatch('event-sent');
+            } else {
+                $this->addError('sendData', 'Failed: ' . $response->body());
+            }
+        } catch (\Throwable $e) {
+            $this->addError('sendData', 'Error: ' . $e->getMessage());
+        }
     }
 }; ?>
 
@@ -28,61 +97,58 @@ new #[Title('App Detail')] class extends Component {
     <div class="flex items-center justify-between">
         <div>
             <div class="flex items-center gap-3">
-                <a href="{{ route('apps.index') }}" wire:navigate class="text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 transition-colors">
-                    <flux:icon.arrow-left class="size-5" />
+                <a href="{{ route('apps.index') }}" wire:navigate class="text-muted-foreground hover:text-foreground transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="size-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                    </svg>
                 </a>
-                <flux:heading size="xl">{{ $app->name }}</flux:heading>
-                <flux:badge :variant="$app->is_active ? 'success' : 'danger'" size="sm">
+                <h1 class="text-2xl font-semibold text-foreground">{{ $app->name }}</h1>
+                <x-ui.badge :variant="$app->is_active ? 'success' : 'danger'">
                     {{ $app->is_active ? 'Active' : 'Inactive' }}
-                </flux:badge>
+                </x-ui.badge>
             </div>
-            <flux:subheading class="ml-8">Debug Console</flux:subheading>
+            <p class="text-sm text-muted-foreground mt-1 ml-8">Debug Console</p>
         </div>
         <div class="flex items-center gap-2">
             <div class="flex items-center gap-2 text-sm">
                 <span class="size-2 rounded-full" :class="connected ? 'bg-green-500' : 'bg-red-500'"></span>
-                <span class="text-zinc-500 dark:text-zinc-400" x-text="connected ? 'Connected' : 'Disconnected'"></span>
+                <span class="text-muted-foreground" x-text="connected ? 'Connected' : 'Disconnected'"></span>
             </div>
-            <flux:button size="sm" variant="filled" @click="clearEvents()">
+            <x-ui.button size="sm" variant="outline" @click="clearEvents()">
                 Clear
-            </flux:button>
+            </x-ui.button>
         </div>
     </div>
 
     {{-- App Info --}}
     <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <div class="rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 p-4">
-            <p class="text-xs text-zinc-500 dark:text-zinc-400 mb-1">App ID</p>
-            <p class="font-mono text-sm text-zinc-900 dark:text-zinc-100 truncate" title="{{ $app->id }}">{{ $app->id }}</p>
-        </div>
-        <div class="rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 p-4">
-            <p class="text-xs text-zinc-500 dark:text-zinc-400 mb-1">Key</p>
-            <p class="font-mono text-sm text-zinc-900 dark:text-zinc-100 truncate" title="{{ $app->key }}">{{ $app->key }}</p>
-        </div>
-        <div class="rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 p-4">
-            <p class="text-xs text-zinc-500 dark:text-zinc-400 mb-1">Secret</p>
-            <p class="font-mono text-sm text-zinc-900 dark:text-zinc-100 truncate" title="{{ $app->secret }}">{{ $app->secret }}</p>
-        </div>
+        <x-ui.card class="p-4">
+            <p class="text-xs text-muted-foreground mb-1">App ID</p>
+            <p class="font-mono text-sm text-foreground truncate" title="{{ $app->id }}">{{ $app->id }}</p>
+        </x-ui.card>
+        <x-ui.card class="p-4">
+            <p class="text-xs text-muted-foreground mb-1">Key</p>
+            <p class="font-mono text-sm text-foreground truncate" title="{{ $app->key }}">{{ $app->key }}</p>
+        </x-ui.card>
+        <x-ui.card class="p-4">
+            <p class="text-xs text-muted-foreground mb-1">Secret</p>
+            <p class="font-mono text-sm text-foreground truncate" title="{{ $app->secret }}">{{ $app->secret }}</p>
+        </x-ui.card>
     </div>
 
     {{-- Channel Subscribe --}}
     <div class="flex items-end gap-3">
         <div class="flex-1">
-            <label class="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">Subscribe to Channel</label>
-            <input
-                type="text"
+            <label class="block text-sm font-medium text-foreground mb-1">Subscribe to Channel</label>
+            <x-ui.input
                 x-model="channelInput"
                 @keydown.enter="subscribeChannel()"
                 placeholder="e.g. my-channel, presence-room, private-chat"
-                class="w-full rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
         </div>
-        <button
-            @click="subscribeChannel()"
-            class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 transition-colors"
-        >
+        <x-ui.button @click="subscribeChannel()">
             Subscribe
-        </button>
+        </x-ui.button>
     </div>
 
     {{-- Active Channels --}}
@@ -97,8 +163,54 @@ new #[Title('App Detail')] class extends Component {
         </template>
     </div>
 
+    {{-- Send Event --}}
+    <div x-show="channels.length > 0" class="rounded-lg border border-border bg-card p-4 space-y-3">
+        <p class="text-sm font-medium text-foreground">Send Event</p>
+        <div class="grid grid-cols-1 gap-3 sm:grid-cols-3">
+            <div>
+                <label class="block text-xs text-muted-foreground mb-1">Channel</label>
+                <x-ui.select
+                    x-model="sendChannel"
+                    @change="$wire.set('sendChannel', sendChannel)"
+                >
+                    <option value="">Select channel...</option>
+                    <template x-for="ch in channels" :key="ch">
+                        <option :value="ch" x-text="ch"></option>
+                    </template>
+                </x-ui.select>
+            </div>
+            <div>
+                <label class="block text-xs text-muted-foreground mb-1">Event Name</label>
+                <x-ui.input
+                    x-model="sendEventName"
+                    placeholder="e.g. my-event"
+                />
+            </div>
+            <div class="flex items-end">
+                <x-ui.button
+                    class="w-full"
+                    @click="$wire.sendEvent(sendChannel, sendEventName, sendData)"
+                >
+                    Send
+                </x-ui.button>
+            </div>
+        </div>
+        <div>
+            <label class="block text-xs text-muted-foreground mb-1">Data (JSON)</label>
+            <x-ui.textarea
+                x-model="sendData"
+                rows="3"
+                placeholder='{"message": "hello"}'
+                class="font-mono"
+            ></x-ui.textarea>
+            @error('sendData')
+                <p class="mt-1 text-xs text-destructive">{{ $message }}</p>
+            @enderror
+        </div>
+    </div>
+
     {{-- Event Log --}}
-    <div class="flex-1 overflow-hidden rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-900 flex flex-col min-h-[400px]">
+    <div class="flex-1 overflow-hidden rounded-lg border border-border bg-zinc-900 flex flex-col min-h-[400px]">
         <div class="flex items-center justify-between px-4 py-2 border-b border-zinc-700 bg-zinc-800">
             <span class="text-xs font-medium text-zinc-400">Event Log</span>
             <span class="text-xs text-zinc-500" x-text="events.length + ' events'"></span>
@@ -137,6 +249,9 @@ Alpine.data('appDebugConsole', (config) => ({
     channels: [],
     events: [],
     channelInput: '',
+    sendChannel: '',
+    sendEventName: '',
+    sendData: '{}',
 
     connect() {
         if (!window.Pusher) {
@@ -208,6 +323,10 @@ Alpine.data('appDebugConsole', (config) => ({
 
         this.channels.push(name);
         this.channelInput = '';
+        if (this.channels.length === 1) {
+            this.sendChannel = name;
+            this.$wire.set('sendChannel', name);
+        }
     },
 
     unsubscribeChannel(name) {

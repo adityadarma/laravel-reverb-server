@@ -31,10 +31,8 @@ new #[Title('Log in')] #[Layout('layouts.auth')] class extends Component {
         }
 
         RateLimiter::clear($this->throttleKey());
-
         session()->regenerate();
-
-        $this->redirect('/', navigate: true);
+        $this->redirect('/', navigate: false);
     }
 
     private function ensureIsNotRateLimited(): void
@@ -52,46 +50,53 @@ new #[Title('Log in')] #[Layout('layouts.auth')] class extends Component {
 
     private function throttleKey(): string
     {
-        return Str::transliterate(Str::lower($this->email).'|'.request()->ip());
+        return Str::transliterate(Str::lower($this->email) . '|' . request()->ip());
     }
 }; ?>
 
-<div class="flex flex-col gap-6">
-    <x-auth-header title="Log in to your account" description="Enter your email and password below to log in" />
+<div class="space-y-5">
+    <div class="space-y-1 text-center">
+        <h2 class="text-xl font-semibold text-foreground">Sign in</h2>
+        <p class="text-sm text-muted-foreground">Enter your credentials to continue</p>
+    </div>
 
-    <!-- Session Status -->
-    <x-auth-session-status class="text-center" :status="session('status')" />
+    @if (session('status'))
+        <div class="rounded-md bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 px-3 py-2 text-sm text-emerald-700 dark:text-emerald-400">
+            {{ session('status') }}
+        </div>
+    @endif
 
-    <form wire:submit="login" class="flex flex-col gap-6">
-        <flux:input
+    <form wire:submit="login" class="space-y-4">
+        <x-ui.input
             wire:model="email"
-            label="Email address"
+            label="Email"
             type="email"
-            required
-            autofocus
+            placeholder="you@example.com"
             autocomplete="email"
-            placeholder="email@example.com"
-            :invalid="$errors->has('email')"
-            :description="$errors->first('email')"
+            autofocus
+            :error="$errors->first('email')"
         />
 
-        <flux:input
+        <x-ui.input
             wire:model="password"
             label="Password"
             type="password"
-            required
+            placeholder="••••••••"
             autocomplete="current-password"
-            placeholder="Password"
-            viewable
-            :invalid="$errors->has('password')"
-            :description="$errors->first('password')"
+            :error="$errors->first('password')"
         />
 
-        <flux:checkbox wire:model="remember" label="Remember me" />
+        <div class="flex items-center gap-2">
+            <x-ui.checkbox wire:model="remember" id="remember" label="Remember me" />
+        </div>
 
-        <flux:button variant="primary" type="submit" class="w-full" wire:loading.attr="disabled">
-            <span wire:loading.remove>Log in</span>
-            <span wire:loading>Logging in...</span>
-        </flux:button>
+        <x-ui.button type="submit" class="w-full" wire:loading.attr="disabled">
+            <svg wire:loading class="size-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+            </svg>
+            <span wire:loading.remove>Sign in</span>
+            <span wire:loading>Signing in...</span>
+        </x-ui.button>
     </form>
 </div>
