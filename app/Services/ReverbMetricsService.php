@@ -63,20 +63,20 @@ class ReverbMetricsService
             $host = '127.0.0.1';
         }
 
-        $scheme    = app()->isProduction() ? 'https' : 'http';
-        $endpoint  = "/apps/{$app->id}/channels";
+        $scheme = app()->isProduction() ? 'https' : 'http';
+        $endpoint = "/apps/{$app->id}/channels";
         $timestamp = (string) time();
 
         $params = [
-            'auth_key'       => $app->key,
+            'auth_key' => $app->key,
             'auth_timestamp' => $timestamp,
-            'auth_version'   => '1.0',
+            'auth_version' => '1.0',
         ];
         ksort($params);
 
         $queryString = http_build_query($params);
-        $toSign      = "GET\n{$endpoint}\n{$queryString}";
-        $signature   = hash_hmac('sha256', $toSign, $app->secret);
+        $toSign = "GET\n{$endpoint}\n{$queryString}";
+        $signature = hash_hmac('sha256', $toSign, $app->secret);
 
         $url = "{$scheme}://{$host}:{$port}{$path}{$endpoint}?{$queryString}&auth_signature={$signature}";
 
@@ -128,8 +128,8 @@ class ReverbMetricsService
             $host = '127.0.0.1';
         }
 
-        $scheme    = app()->isProduction() ? 'https' : 'http';
-        $endpoint  = "/apps/{$app->id}/channels/{$channelName}";
+        $scheme = app()->isProduction() ? 'https' : 'http';
+        $endpoint = "/apps/{$app->id}/channels/{$channelName}";
         $timestamp = (string) time();
 
         // Request subscription_count for all channels, user_count only for presence
@@ -138,16 +138,16 @@ class ReverbMetricsService
             : 'subscription_count';
 
         $params = [
-            'auth_key'       => $app->key,
+            'auth_key' => $app->key,
             'auth_timestamp' => $timestamp,
-            'auth_version'   => '1.0',
-            'info'           => $infoFields,
+            'auth_version' => '1.0',
+            'info' => $infoFields,
         ];
         ksort($params);
 
         $queryString = http_build_query($params);
-        $toSign      = "GET\n{$endpoint}\n{$queryString}";
-        $signature   = hash_hmac('sha256', $toSign, $app->secret);
+        $toSign = "GET\n{$endpoint}\n{$queryString}";
+        $signature = hash_hmac('sha256', $toSign, $app->secret);
 
         $url = "{$scheme}://{$host}:{$port}{$path}{$endpoint}?{$queryString}&auth_signature={$signature}";
 

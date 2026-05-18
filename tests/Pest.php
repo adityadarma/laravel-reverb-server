@@ -1,32 +1,24 @@
 <?php
 
+use App\Models\App;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Str;
 use Tests\TestCase;
 
 /*
 |--------------------------------------------------------------------------
 | Test Case
 |--------------------------------------------------------------------------
-|
-| The closure you provide to your test functions is always bound to a specific PHPUnit test
-| case class. By default, that class is "PHPUnit\Framework\TestCase". Of course, you may
-| need to change it using the "pest()" function to bind different classes or traits.
-|
 */
 
 pest()->extend(TestCase::class)
- // ->use(RefreshDatabase::class)
-    ->in('Feature');
+    ->use(RefreshDatabase::class)
+    ->in('Feature', 'Unit');
 
 /*
 |--------------------------------------------------------------------------
 | Expectations
 |--------------------------------------------------------------------------
-|
-| When you're writing tests, you often need to check that values meet certain conditions. The
-| "expect()" function gives you access to a set of "expectations" methods that you can use
-| to assert different things. Of course, you may extend the Expectation API at any time.
-|
 */
 
 expect()->extend('toBeOne', function () {
@@ -37,14 +29,27 @@ expect()->extend('toBeOne', function () {
 |--------------------------------------------------------------------------
 | Functions
 |--------------------------------------------------------------------------
-|
-| While Pest is very powerful out-of-the-box, you may have some testing code specific to your
-| project that you don't want to repeat in every file. Here you can also expose helpers as
-| global functions to help you to reduce the number of lines of code in your test files.
-|
 */
 
-function something()
+function createApp(array $overrides = []): App
 {
-    // ..
+    return App::create(array_merge([
+        'name' => 'Test App',
+        'key' => Str::random(20),
+        'secret' => Str::random(40),
+        'host' => 'localhost',
+        'port' => 443,
+        'scheme' => 'https',
+        'allowed_origins' => ['*'],
+        'ping_interval' => 60,
+        'activity_timeout' => 30,
+        'max_connections' => null,
+        'max_message_size' => 10000,
+        'accept_client_events_from' => 'members',
+        'rate_limiting_enabled' => false,
+        'rate_limit_max_attempts' => 60,
+        'rate_limit_decay_seconds' => 60,
+        'rate_limit_terminate_on_limit' => false,
+        'is_active' => true,
+    ], $overrides));
 }
