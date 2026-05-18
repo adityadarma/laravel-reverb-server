@@ -1,5 +1,5 @@
 <div class="relative mb-6 w-full">
-    <flux:heading size="xl" level="1">Settings</flux:heading>
-    <flux:subheading size="lg" class="mb-6">Manage your profile and account settings</flux:subheading>
-    <flux:separator variant="subtle" />
+    <h1 class="text-2xl font-semibold text-foreground">Settings</h1>
+    <p class="text-sm text-muted-foreground mb-6">Manage your profile and account settings</p>
+    <div class="h-px bg-border"></div>
 </div>

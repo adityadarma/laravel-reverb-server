@@ -13,8 +13,10 @@
             >
                 {{-- Logo --}}
                 <div class="flex h-14 items-center border-b border-sidebar-border px-4">
-                    <a href="{{ route('dashboard') }}" wire:navigate class="flex items-center gap-2">
-                        <x-app-logo-icon class="size-6 text-foreground" />
+                    <a href="{{ route('dashboard') }}" wire:navigate class="flex items-center gap-2.5">
+                        <div class="flex size-7 items-center justify-center rounded-md bg-foreground">
+                            <x-app-logo-icon class="size-4 text-background" />
+                        </div>
                         <span class="font-semibold text-sidebar-foreground">{{ config('app.name') }}</span>
                     </a>
                 </div>

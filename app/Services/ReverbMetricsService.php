@@ -8,94 +8,75 @@ use Illuminate\Support\Facades\Http;
 class ReverbMetricsService
 {
     /**
-     * Get connection count for a single app from Reverb HTTP API.
+     * Get the Reverb server base URL.
      */
-    public function connections(App $app): int
+    private function baseUrl(): string
     {
         $host = config('reverb.servers.reverb.host', '0.0.0.0');
         $port = config('reverb.servers.reverb.port', 8080);
         $path = config('reverb.servers.reverb.path', '');
+        $scheme = app()->isProduction() ? 'https' : 'http';
 
         if ($host === '0.0.0.0') {
             $host = '127.0.0.1';
         }
 
-        $endpoint = "/apps/{$app->id}/connections";
-        $timestamp = (string) time();
-
-        $params = [
-            'auth_key' => $app->key,
-            'auth_timestamp' => $timestamp,
-            'auth_version' => '1.0',
-        ];
-        ksort($params);
-
-        $queryString = http_build_query($params);
-        $toSign = "GET\n{$endpoint}\n{$queryString}";
-        $signature = hash_hmac('sha256', $toSign, $app->secret);
-
-        $scheme = app()->isProduction() ? 'https' : 'http';
-        $url = "{$scheme}://{$host}:{$port}{$path}{$endpoint}?{$queryString}&auth_signature={$signature}";
-
-        try {
-            $response = Http::timeout(2)->get($url);
-
-            if ($response->successful()) {
-                return $response->json('connections', 0);
-            }
-        } catch (\Throwable) {
-            // Reverb server not running or unreachable
-        }
-
-        return 0;
+        return "{$scheme}://{$host}:{$port}{$path}";
     }
 
     /**
-     * Get active channels for a single app from Reverb HTTP API.
+     * Build a signed URL for the Reverb HTTP API.
      */
-    public function channels(App $app): array
+    private function signedUrl(App $app, string $method, string $endpoint, array $extra = []): string
     {
-        $host = config('reverb.servers.reverb.host', '0.0.0.0');
-        $port = config('reverb.servers.reverb.port', 8080);
-        $path = config('reverb.servers.reverb.path', '');
-
-        if ($host === '0.0.0.0') {
-            $host = '127.0.0.1';
-        }
-
-        $scheme = app()->isProduction() ? 'https' : 'http';
-        $endpoint = "/apps/{$app->id}/channels";
-        $timestamp = (string) time();
-
-        $params = [
+        $params = array_merge([
             'auth_key' => $app->key,
-            'auth_timestamp' => $timestamp,
+            'auth_timestamp' => (string) time(),
             'auth_version' => '1.0',
-        ];
+        ], $extra);
+
         ksort($params);
 
         $queryString = http_build_query($params);
-        $toSign = "GET\n{$endpoint}\n{$queryString}";
-        $signature = hash_hmac('sha256', $toSign, $app->secret);
+        $signature = hash_hmac('sha256', "{$method}\n{$endpoint}\n{$queryString}", $app->secret);
 
-        $url = "{$scheme}://{$host}:{$port}{$path}{$endpoint}?{$queryString}&auth_signature={$signature}";
+        return $this->baseUrl()."{$endpoint}?{$queryString}&auth_signature={$signature}";
+    }
 
+    /**
+     * Get connection count for a single app.
+     */
+    public function connections(App $app): int
+    {
         try {
-            $response = Http::timeout(2)->get($url);
+            $response = Http::timeout(2)->get(
+                $this->signedUrl($app, 'GET', "/apps/{$app->id}/connections")
+            );
 
-            if ($response->successful()) {
-                return $response->json('channels', []);
-            }
+            return $response->successful() ? $response->json('connections', 0) : 0;
         } catch (\Throwable) {
-            // Reverb server not running or unreachable
+            return 0;
         }
+    }
 
-        return [];
+    /**
+     * Get active channels for a single app.
+     */
+    public function channels(App $app): array
+    {
+        try {
+            $response = Http::timeout(2)->get(
+                $this->signedUrl($app, 'GET', "/apps/{$app->id}/channels")
+            );
+
+            return $response->successful() ? $response->json('channels', []) : [];
+        } catch (\Throwable) {
+            return [];
+        }
     }
 
     /**
      * Get active channels with subscriber info for a single app.
-     * Fetches channels list then enriches with per-channel subscription count.
      */
     public function channelsWithInfo(App $app): array
     {
@@ -120,48 +101,21 @@ class ReverbMetricsService
      */
     public function channelDetail(App $app, string $channelName): array
     {
-        $host = config('reverb.servers.reverb.host', '0.0.0.0');
-        $port = config('reverb.servers.reverb.port', 8080);
-        $path = config('reverb.servers.reverb.path', '');
-
-        if ($host === '0.0.0.0') {
-            $host = '127.0.0.1';
-        }
-
-        $scheme = app()->isProduction() ? 'https' : 'http';
-        $endpoint = "/apps/{$app->id}/channels/{$channelName}";
-        $timestamp = (string) time();
-
-        // Request subscription_count for all channels, user_count only for presence
         $infoFields = str_starts_with($channelName, 'presence-')
             ? 'subscription_count,user_count'
             : 'subscription_count';
 
-        $params = [
-            'auth_key' => $app->key,
-            'auth_timestamp' => $timestamp,
-            'auth_version' => '1.0',
-            'info' => $infoFields,
-        ];
-        ksort($params);
-
-        $queryString = http_build_query($params);
-        $toSign = "GET\n{$endpoint}\n{$queryString}";
-        $signature = hash_hmac('sha256', $toSign, $app->secret);
-
-        $url = "{$scheme}://{$host}:{$port}{$path}{$endpoint}?{$queryString}&auth_signature={$signature}";
-
         try {
-            $response = Http::timeout(2)->get($url);
+            $response = Http::timeout(2)->get(
+                $this->signedUrl($app, 'GET', "/apps/{$app->id}/channels/{$channelName}", [
+                    'info' => $infoFields,
+                ])
+            );
 
-            if ($response->successful()) {
-                return $response->json() ?? [];
-            }
+            return $response->successful() ? ($response->json() ?? []) : [];
         } catch (\Throwable) {
-            //
+            return [];
         }
-
-        return [];
     }
 
     /**
