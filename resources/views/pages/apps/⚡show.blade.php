@@ -1,12 +1,21 @@
 <?php
 
 use App\Models\App;
+use App\Models\AuditLog;
+use App\Models\ReverbMetric;
+use App\Services\ReverbMetricsService;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Str;
+use Livewire\Attributes\Computed;
 use Livewire\Attributes\Title;
 use Livewire\Component;
 
 new #[Title('App Detail')] class extends Component {
     public App $app;
+
+    // Live stats — updated via refreshLiveStats() called from Alpine interval
+    public int $liveConnections = 0;
+    public int $liveChannels    = 0;
 
     // Send event form
     public string $sendChannel = '';
@@ -16,6 +25,40 @@ new #[Title('App Detail')] class extends Component {
     public function mount(string $id): void
     {
         $this->app = App::findOrFail($id);
+        $this->refreshLiveStats();
+    }
+
+    #[Computed(persist: false)]
+    public function metrics(): array
+    {
+        return ReverbMetric::lastMinutes($this->app->id, 60);
+    }
+
+    public function refreshLiveStats(): void
+    {
+        $service = app(ReverbMetricsService::class);
+        $this->liveConnections = $service->connections($this->app);
+        $this->liveChannels    = count($service->channels($this->app));
+    }
+
+    public function rotateKey(): void
+    {
+        $old = $this->app->key;
+        $this->app->update(['key' => Str::random(20)]);
+
+        AuditLog::record('rotated_key', $this->app, ['key' => $old], ['key' => $this->app->key]);
+
+        $this->dispatch('toast', message: 'App key rotated successfully.');
+    }
+
+    public function rotateSecret(): void
+    {
+        $old = $this->app->secret;
+        $this->app->update(['secret' => Str::random(40)]);
+
+        AuditLog::record('rotated_secret', $this->app, ['secret' => '***'], ['secret' => '***']);
+
+        $this->dispatch('toast', message: 'App secret rotated successfully.');
     }
 
     public function dispatchEvent(string $channel, string $event, string $data): void
@@ -25,7 +68,6 @@ new #[Title('App Detail')] class extends Component {
             return;
         }
 
-        // Validate JSON
         $decoded = json_decode($data, true);
         if (json_last_error() !== JSON_ERROR_NONE) {
             $this->addError('sendData', 'Invalid JSON: ' . json_last_error_msg());
@@ -89,8 +131,8 @@ new #[Title('App Detail')] class extends Component {
         wsPort: {{ config('reverb.servers.reverb.port', 8080) }},
         forceTLS: {{ app()->isProduction() ? 'true' : 'false' }},
     })"
-    x-init="connect()"
-    @navigate-away.window="disconnect()"
+    x-init="connect(); startStatsPolling()"
+    @navigate-away.window="disconnect(); stopStatsPolling()"
 >
 
     {{-- Header --}}
@@ -107,33 +149,162 @@ new #[Title('App Detail')] class extends Component {
                     {{ $app->is_active ? 'Active' : 'Inactive' }}
                 </x-ui.badge>
             </div>
-            <p class="text-sm text-muted-foreground mt-1 ml-8">Debug Console</p>
+            <p class="text-sm text-muted-foreground mt-1 ml-8">App Detail</p>
         </div>
         <div class="flex items-center gap-2">
             <div class="flex items-center gap-2 text-sm">
                 <span class="size-2 rounded-full" :class="connected ? 'bg-green-500' : 'bg-red-500'"></span>
                 <span class="text-muted-foreground" x-text="connected ? 'Connected' : 'Disconnected'"></span>
             </div>
-            <x-ui.button size="sm" variant="outline" @click="clearEvents()">
-                Clear
-            </x-ui.button>
+            <x-ui.button size="sm" variant="outline" @click="clearEvents()">Clear</x-ui.button>
         </div>
     </div>
 
-    {{-- App Info --}}
-    <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <x-ui.card class="p-4">
-            <p class="text-xs text-muted-foreground mb-1">App ID</p>
-            <p class="font-mono text-sm text-foreground truncate" title="{{ $app->id }}">{{ $app->id }}</p>
+    {{-- App Credentials --}}
+    <x-ui.card>
+        <div class="px-5 py-3.5 border-b border-border flex items-center justify-between">
+            <div>
+                <h2 class="text-sm font-semibold text-foreground">Credentials</h2>
+                <p class="text-xs text-muted-foreground mt-0.5">Keep your secret safe — rotate if compromised</p>
+            </div>
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x divide-border">
+            {{-- App ID --}}
+            <div class="p-5" x-data="{ copied: false }">
+                <p class="text-xs text-muted-foreground mb-2">App ID</p>
+                <div class="flex items-center gap-2">
+                    <p class="font-mono text-sm text-foreground truncate flex-1" title="{{ $app->id }}">{{ $app->id }}</p>
+                    <button @click="navigator.clipboard.writeText('{{ $app->id }}'); copied = true; setTimeout(() => copied = false, 1500)"
+                        class="shrink-0 text-muted-foreground hover:text-foreground transition-colors" title="Copy">
+                        <svg x-show="!copied" class="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+                        <svg x-show="copied" class="size-4 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                    </button>
+                </div>
+            </div>
+            {{-- Key --}}
+            <div class="p-5" x-data="{ copied: false }">
+                <div class="flex items-center justify-between mb-2">
+                    <p class="text-xs text-muted-foreground">Key</p>
+                    <button wire:click="rotateKey" wire:confirm="Rotate the app key? All clients using the current key will be disconnected."
+                        class="text-xs text-amber-600 dark:text-amber-400 hover:underline flex items-center gap-1 transition-colors">
+                        <svg class="size-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                        Rotate
+                    </button>
+                </div>
+                <div class="flex items-center gap-2">
+                    <p class="font-mono text-sm text-foreground truncate flex-1" title="{{ $app->key }}">{{ $app->key }}</p>
+                    <button @click="navigator.clipboard.writeText('{{ $app->key }}'); copied = true; setTimeout(() => copied = false, 1500)"
+                        class="shrink-0 text-muted-foreground hover:text-foreground transition-colors" title="Copy">
+                        <svg x-show="!copied" class="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+                        <svg x-show="copied" class="size-4 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                    </button>
+                </div>
+            </div>
+            {{-- Secret --}}
+            <div class="p-5" x-data="{ copied: false, show: false }">
+                <div class="flex items-center justify-between mb-2">
+                    <p class="text-xs text-muted-foreground">Secret</p>
+                    <button wire:click="rotateSecret" wire:confirm="Rotate the app secret? Update your server-side integrations immediately."
+                        class="text-xs text-amber-600 dark:text-amber-400 hover:underline flex items-center gap-1 transition-colors">
+                        <svg class="size-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                        Rotate
+                    </button>
+                </div>
+                <div class="flex items-center gap-2">
+                    <p class="font-mono text-sm text-foreground truncate flex-1" x-text="show ? '{{ $app->secret }}' : '••••••••••••••••••••'"></p>
+                    <button @click="show = !show" class="shrink-0 text-muted-foreground hover:text-foreground transition-colors" :title="show ? 'Hide' : 'Show'">
+                        <svg x-show="!show" class="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                        <svg x-show="show" class="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"/></svg>
+                    </button>
+                    <button @click="navigator.clipboard.writeText('{{ $app->secret }}'); copied = true; setTimeout(() => copied = false, 1500)"
+                        class="shrink-0 text-muted-foreground hover:text-foreground transition-colors" title="Copy">
+                        <svg x-show="!copied" class="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+                        <svg x-show="copied" class="size-4 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </x-ui.card>
+
+    {{-- Metrics Chart --}}
+    @php
+        $metrics    = $this->metrics;
+        $hasMetrics = count($metrics) > 1;
+        $connPoints = collect($metrics)->pluck('connections')->all();
+        $chPoints   = collect($metrics)->pluck('channels')->all();
+        $maxConn    = max(array_merge($connPoints, [1]));
+        $maxCh      = max(array_merge($chPoints, [1]));
+        $w = 100; $h = 48;
+        $step = $hasMetrics ? $w / (count($metrics) - 1) : $w;
+        $connCoords = collect($connPoints)->map(fn($v, $k) =>
+            round($k * $step, 1) . ',' . round($h - ($v / $maxConn) * $h, 1)
+        )->implode(' ');
+        $chCoords = collect($chPoints)->map(fn($v, $k) =>
+            round($k * $step, 1) . ',' . round($h - ($v / $maxCh) * $h, 1)
+        )->implode(' ');
+    @endphp
+
+    <div class="grid grid-cols-2 gap-4">
+        {{-- Connections chart --}}
+        <x-ui.card>
+            <div class="p-5">
+                <div class="flex items-center justify-between mb-3">
+                    <div>
+                        <p class="text-xs text-muted-foreground">Live Connections</p>
+                        <p class="text-2xl font-bold text-foreground">{{ $liveConnections }}</p>
+                    </div>
+                    <span class="text-xs text-muted-foreground">Last 60 min</span>
+                </div>
+                @if ($hasMetrics)
+                    <svg viewBox="0 0 {{ $w }} {{ $h }}" class="w-full h-12 text-emerald-500" preserveAspectRatio="none">
+                        <defs>
+                            <linearGradient id="connGrad" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="0%" stop-color="currentColor" stop-opacity="0.2"/>
+                                <stop offset="100%" stop-color="currentColor" stop-opacity="0"/>
+                            </linearGradient>
+                        </defs>
+                        <polygon points="{{ $connCoords }} {{ $w }},{{ $h }} 0,{{ $h }}" fill="url(#connGrad)"/>
+                        <polyline points="{{ $connCoords }}" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                @else
+                    <div class="h-12 flex items-center justify-center text-xs text-muted-foreground">No history yet</div>
+                @endif
+            </div>
         </x-ui.card>
-        <x-ui.card class="p-4">
-            <p class="text-xs text-muted-foreground mb-1">Key</p>
-            <p class="font-mono text-sm text-foreground truncate" title="{{ $app->key }}">{{ $app->key }}</p>
+
+        {{-- Channels chart --}}
+        <x-ui.card>
+            <div class="p-5">
+                <div class="flex items-center justify-between mb-3">
+                    <div>
+                        <p class="text-xs text-muted-foreground">Active Channels</p>
+                        <p class="text-2xl font-bold text-foreground">{{ $liveChannels }}</p>
+                    </div>
+                    <span class="text-xs text-muted-foreground">Last 60 min</span>
+                </div>
+                @if ($hasMetrics)
+                    <svg viewBox="0 0 {{ $w }} {{ $h }}" class="w-full h-12 text-violet-500" preserveAspectRatio="none">
+                        <defs>
+                            <linearGradient id="chGrad" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="0%" stop-color="currentColor" stop-opacity="0.2"/>
+                                <stop offset="100%" stop-color="currentColor" stop-opacity="0"/>
+                            </linearGradient>
+                        </defs>
+                        <polygon points="{{ $chCoords }} {{ $w }},{{ $h }} 0,{{ $h }}" fill="url(#chGrad)"/>
+                        <polyline points="{{ $chCoords }}" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                @else
+                    <div class="h-12 flex items-center justify-center text-xs text-muted-foreground">No history yet</div>
+                @endif
+            </div>
         </x-ui.card>
-        <x-ui.card class="p-4">
-            <p class="text-xs text-muted-foreground mb-1">Secret</p>
-            <p class="font-mono text-sm text-foreground truncate" title="{{ $app->secret }}">{{ $app->secret }}</p>
-        </x-ui.card>
+    </div>
+
+
+    {{-- Debug Console --}}
+    <div class="flex items-center gap-2">
+        <h2 class="text-base font-semibold text-foreground">Debug Console</h2>
+        <span class="text-xs text-muted-foreground">· Subscribe to channels and send events</span>
     </div>
 
     {{-- Channel Subscribe --}}
@@ -146,9 +317,7 @@ new #[Title('App Detail')] class extends Component {
                 placeholder="e.g. my-channel, presence-room, private-chat"
             />
         </div>
-        <x-ui.button @click="subscribeChannel()">
-            Subscribe
-        </x-ui.button>
+        <x-ui.button @click="subscribeChannel()">Subscribe</x-ui.button>
     </div>
 
     {{-- Active Channels --}}
@@ -169,10 +338,7 @@ new #[Title('App Detail')] class extends Component {
         <div class="grid grid-cols-1 gap-3 sm:grid-cols-3">
             <div>
                 <label class="block text-xs text-muted-foreground mb-1">Channel</label>
-                <x-ui.select
-                    x-model="sendChannel"
-                    @change="$wire.set('sendChannel', sendChannel)"
-                >
+                <x-ui.select x-model="sendChannel" @change="$wire.set('sendChannel', sendChannel)">
                     <option value="">Select channel...</option>
                     <template x-for="ch in channels" :key="ch">
                         <option :value="ch" x-text="ch"></option>
@@ -181,28 +347,15 @@ new #[Title('App Detail')] class extends Component {
             </div>
             <div>
                 <label class="block text-xs text-muted-foreground mb-1">Event Name</label>
-                <x-ui.input
-                    x-model="sendEventName"
-                    placeholder="e.g. my-event"
-                />
+                <x-ui.input x-model="sendEventName" placeholder="e.g. my-event"/>
             </div>
             <div class="flex items-end">
-                <x-ui.button
-                    class="w-full"
-                    @click="$wire.dispatchEvent(sendChannel, sendEventName, sendData)"
-                >
-                    Send
-                </x-ui.button>
+                <x-ui.button class="w-full" @click="$wire.dispatchEvent(sendChannel, sendEventName, sendData)">Send</x-ui.button>
             </div>
         </div>
         <div>
             <label class="block text-xs text-muted-foreground mb-1">Data (JSON)</label>
-            <x-ui.textarea
-                x-model="sendData"
-                rows="3"
-                placeholder='{"message": "hello"}'
-                class="font-mono"
-            ></x-ui.textarea>
+            <x-ui.textarea x-model="sendData" rows="3" placeholder='{"message": "hello"}' class="font-mono"></x-ui.textarea>
             @error('sendData')
                 <p class="mt-1 text-xs text-destructive">{{ $message }}</p>
             @enderror
@@ -241,6 +394,7 @@ new #[Title('App Detail')] class extends Component {
 
 </div>
 
+
 @script
 <script>
 Alpine.data('appDebugConsole', (config) => ({
@@ -252,6 +406,20 @@ Alpine.data('appDebugConsole', (config) => ({
     sendChannel: '',
     sendEventName: '',
     sendData: '{}',
+    _statsInterval: null,
+
+    startStatsPolling() {
+        this._statsInterval = setInterval(() => {
+            this.$wire.refreshLiveStats();
+        }, 3000);
+    },
+
+    stopStatsPolling() {
+        if (this._statsInterval) {
+            clearInterval(this._statsInterval);
+            this._statsInterval = null;
+        }
+    },
 
     connect() {
         if (!window.Pusher) {
@@ -340,15 +508,7 @@ Alpine.data('appDebugConsole', (config) => ({
     },
 
     addEvent(type, label, channel, data) {
-        this.events.push({
-            type,
-            label,
-            channel,
-            data,
-            time: new Date().toLocaleTimeString(),
-        });
-
-        // Keep max 200 events
+        this.events.push({ type, label, channel, data, time: new Date().toLocaleTimeString() });
         if (this.events.length > 200) {
             this.events = this.events.slice(-200);
         }
