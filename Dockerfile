@@ -27,6 +27,7 @@ RUN mkdir -p database && touch database/database.sqlite \
 FROM php:8.4-fpm-alpine AS production
 
 ARG BUILD_VERSION=dev
+ARG GITHUB_REPOSITORY=""
 ENV APP_VERSION=${BUILD_VERSION}
 
 LABEL org.opencontainers.image.title="Laravel Reverb Server"
@@ -39,8 +40,10 @@ RUN apk add --no-cache \
     nginx \
     supervisor \
     sqlite-dev \
+    mariadb-dev \
+    postgresql-dev \
     curl \
-    && docker-php-ext-install pdo_sqlite pcntl
+    && docker-php-ext-install pdo_sqlite pdo_mysql pdo_pgsql pcntl
 
 # Install Redis extension (for scaling support)
 RUN apk add --no-cache --virtual .build-deps $PHPIZE_DEPS \
@@ -65,7 +68,7 @@ RUN mkdir -p \
         storage/logs \
         bootstrap/cache \
         database \
-    && chown -R www-data:www-data /var/www/html \
+    && chown -R nobody:nobody /var/www/html \
     && chmod -R 775 storage bootstrap/cache
 
 # Config files

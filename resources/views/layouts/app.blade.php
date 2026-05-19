@@ -13,8 +13,10 @@
             >
                 {{-- Logo --}}
                 <div class="flex h-14 items-center border-b border-sidebar-border px-4">
-                    <a href="{{ route('dashboard') }}" wire:navigate class="flex items-center gap-2">
-                        <x-app-logo-icon class="size-6 text-foreground" />
+                    <a href="{{ route('dashboard') }}" wire:navigate class="flex items-center gap-2.5">
+                        <div class="flex size-7 items-center justify-center rounded-md bg-foreground">
+                            <x-app-logo-icon class="size-4 text-background" />
+                        </div>
                         <span class="font-semibold text-sidebar-foreground">{{ config('app.name') }}</span>
                     </a>
                 </div>
@@ -35,6 +37,13 @@
                     >
                         <svg class="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/></svg>
                         Apps
+                    </a>
+
+                    <a href="{{ route('audit-logs') }}" wire:navigate
+                        class="flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors {{ request()->routeIs('audit-logs') ? 'bg-sidebar-accent text-sidebar-accent-foreground' : 'text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground' }}"
+                    >
+                        <svg class="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/></svg>
+                        Audit Logs
                     </a>
                 </nav>
 

@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\App;
+use App\Models\ReverbMetric;
 use App\Services\ReverbMetricsService;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Title;
@@ -37,6 +38,7 @@ new #[Title('Dashboard')] class extends Component {
                 'name'        => $app->name,
                 'connections' => $service->connections($app),
                 'channels'    => $service->channelsWithInfo($app),
+                'history'     => ReverbMetric::lastMinutes($app->id, 60),
             ])
             ->sortByDesc('connections')
             ->values()
@@ -110,6 +112,7 @@ new #[Title('Dashboard')] class extends Component {
         <x-ui.card>
             <div class="px-5 py-3.5 border-b border-border">
                 <h2 class="text-sm font-semibold text-foreground">Apps Overview</h2>
+                <p class="text-xs text-muted-foreground mt-0.5">Last 60 minutes · recorded every minute</p>
             </div>
 
             <div x-data="{ expanded: {} }">
@@ -121,16 +124,39 @@ new #[Title('Dashboard')] class extends Component {
                         class="flex items-center gap-4 px-5 py-3 border-b border-border/50 {{ $hasChannels ? 'cursor-pointer hover:bg-muted/30' : '' }} transition-colors"
                         @if ($hasChannels) @click="expanded[{{ $i }}] = !expanded[{{ $i }}]" @endif
                     >
-                        {{-- Status dot --}}
                         <span class="size-2 rounded-full shrink-0 {{ $stat['connections'] > 0 ? 'bg-emerald-500' : 'bg-zinc-400' }}"></span>
 
-                        {{-- Name --}}
                         <div class="flex-1 min-w-0">
                             <p class="text-sm font-medium text-foreground truncate">{{ $stat['name'] }}</p>
                             <p class="text-xs text-muted-foreground font-mono truncate">{{ Str::limit($stat['id'], 24) }}</p>
                         </div>
 
-                        {{-- Metrics --}}
+                        {{-- Sparkline --}}
+                        @if (count($stat['history']) > 1)
+                            @php
+                                $points = collect($stat['history'])->pluck('connections')->all();
+                                $max    = max(max($points), 1);
+                                $w      = 80;
+                                $h      = 24;
+                                $step   = $w / (count($points) - 1);
+                                $coords = collect($points)->map(fn ($v, $k) =>
+                                    round($k * $step, 1) . ',' . round($h - ($v / $max) * $h, 1)
+                                )->implode(' ');
+                            @endphp
+                            <svg width="{{ $w }}" height="{{ $h }}" class="shrink-0 text-emerald-500">
+                                <polyline
+                                    points="{{ $coords }}"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    stroke-width="1.5"
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                />
+                            </svg>
+                        @else
+                            <div class="w-20 h-6 shrink-0"></div>
+                        @endif
+
                         <div class="flex items-center gap-6 shrink-0">
                             <div class="text-center">
                                 <p class="text-sm font-semibold text-foreground">{{ $stat['connections'] }}</p>
@@ -166,8 +192,8 @@ new #[Title('Dashboard')] class extends Component {
                                         <span class="text-xs font-mono text-foreground flex-1 truncate">{{ $channelName }}</span>
                                         <div class="flex items-center gap-3 text-xs text-muted-foreground shrink-0">
                                             @php
-                                                $subs = $channelData['subscription_count'] ?? null;
-                                                $users = $channelData['user_count'] ?? null;
+                                                $subs    = $channelData['subscription_count'] ?? null;
+                                                $users   = $channelData['user_count'] ?? null;
                                                 $occupied = $channelData['occupied'] ?? null;
                                             @endphp
                                             @if ($subs !== null)
@@ -176,7 +202,7 @@ new #[Title('Dashboard')] class extends Component {
                                                     {{ $subs }}
                                                 </span>
                                             @elseif ($occupied !== null)
-                                                <span class="flex items-center gap-1 {{ $occupied ? 'text-emerald-500' : 'text-zinc-500' }}" title="Occupied">
+                                                <span class="flex items-center gap-1 {{ $occupied ? 'text-emerald-500' : 'text-zinc-500' }}">
                                                     <span class="size-1.5 rounded-full {{ $occupied ? 'bg-emerald-500' : 'bg-zinc-500' }}"></span>
                                                     {{ $occupied ? 'occupied' : 'empty' }}
                                                 </span>

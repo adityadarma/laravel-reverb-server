@@ -50,7 +50,5 @@ new #[Title('Profile settings')] class extends Component {
                 </x-ui.button>
             </div>
         </form>
-
-        <livewire:pages::settings.delete-user-form />
     </x-pages::settings.layout>
 </section>

@@ -2,6 +2,8 @@
 
 namespace App\Providers;
 
+use App\Models\App;
+use App\Observers\AppObserver;
 use Carbon\CarbonImmutable;
 use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Facades\Date;
@@ -24,6 +26,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        App::observe(AppObserver::class);
         $this->configureDefaults();
     }
 
