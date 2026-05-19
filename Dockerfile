@@ -21,7 +21,8 @@ RUN composer install --no-dev --no-scripts --no-autoloader --prefer-dist
 
 COPY . .
 RUN mkdir -p database && touch database/database.sqlite \
-    && composer dump-autoload --optimize --no-dev --no-scripts
+    && composer dump-autoload --optimize --no-dev --no-scripts \
+    && php artisan package:discover --ansi
 
 # ─── Production image ─────────────────────────────────────────────────────────
 FROM php:8.4-fpm-alpine AS production
@@ -68,7 +69,11 @@ RUN mkdir -p \
         storage/logs \
         bootstrap/cache \
         database \
-    && chown -R nobody:nobody /var/www/html \
+    && chown -R nobody:nobody \
+        /var/www/html \
+        /run \
+        /var/lib/nginx \
+        /var/log/nginx \
     && chmod -R 775 storage bootstrap/cache
 
 # Config files
@@ -80,6 +85,9 @@ EXPOSE 80 8080
 
 COPY docker/entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
+
+# Run as non-root user
+USER nobody
 
 ENTRYPOINT ["/entrypoint.sh"]
 CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]

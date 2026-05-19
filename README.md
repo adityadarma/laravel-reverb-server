@@ -7,9 +7,12 @@ A self-hosted WebSocket server management dashboard built on top of [Laravel Rev
 - **Multi-app management** — create and manage multiple Reverb applications with individual credentials
 - **Live dashboard** — monitor active connections and channels with 3-second polling
 - **Connection history** — sparkline charts showing connection trends over the last 60 minutes
+- **App detail charts** — per-app live connections and active channels chart with 3-second refresh
+- **Credential rotation** — rotate app key or secret at any time with one click
 - **Debug console** — subscribe to channels and inspect incoming events in real time
 - **Event sender** — trigger events to any channel directly from the UI
-- **Docker-ready** — pre-built images with SQLite, MariaDB, and PostgreSQL support
+- **Audit log** — track every create, update, delete, and credential rotation with before/after diff
+- **Docker-ready** — pre-built images for `linux/amd64` and `linux/arm64/v8` with SQLite, MariaDB, and PostgreSQL support
 
 ## Requirements
 
@@ -35,13 +38,15 @@ cp .env.sqlite.example .env
 Edit `.env` and fill in the required values:
 
 ```env
-APP_KEY=          # generate with: openssl rand -base64 32
+APP_KEY=          # generate with: php -r "echo 'base64:'.base64_encode(random_bytes(32)).PHP_EOL;"
 APP_URL=https://your-domain.com
 
 REVERB_HOST=your-domain.com
 REVERB_PORT=443
 REVERB_SCHEME=https
 ```
+
+> `APP_KEY` is required. The container will refuse to start without it.
 
 ### 3. Start the server
 
