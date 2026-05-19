@@ -1,9 +1,15 @@
-# Default: SQLite (simplest, no external DB needed)
-# Usage: docker compose up -d
+# Local development — builds image from source
+# Usage: docker compose -f docker-compose.local.yml up -d --build
 
 services:
   app:
-    image: ghcr.io/adityadarma/laravel-reverb-server:${APP_IMAGE_TAG:-latest}
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        BUILD_VERSION: local
+        GITHUB_REPOSITORY: local/laravel-reverb-server
+    image: laravel-reverb-server:local
     container_name: reverb-server
     restart: unless-stopped
     ports:
