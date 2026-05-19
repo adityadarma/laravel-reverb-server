@@ -4,7 +4,7 @@ set -e
 # Create SQLite database if not exists
 if [ ! -f /var/www/html/database/database.sqlite ]; then
     touch /var/www/html/database/database.sqlite
-    chown www-data:www-data /var/www/html/database/database.sqlite
+    chown nobody:nobody /var/www/html/database/database.sqlite
 fi
 
 # Generate app key if not set

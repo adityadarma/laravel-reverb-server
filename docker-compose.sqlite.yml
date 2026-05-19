@@ -1,6 +1,9 @@
+# Default: SQLite (simplest, no external DB needed)
+# Usage: docker compose up -d
+
 services:
   app:
-    image: ghcr.io/${GITHUB_REPOSITORY}:${APP_IMAGE_TAG:-latest}
+    image: ghcr.io/adityadarma/laravel-reverb-server:${APP_IMAGE_TAG:-latest}
     container_name: reverb-server
     restart: unless-stopped
     ports:
